@@ -1,15 +1,14 @@
 """
-Realize AI-player in Doom's basic scene(only three actions:left, right, shot) with deep Q-learning
-dependencies: python 3.7.1, vizdoom 1.1.7
+：Realize AI-player in Doom's basic scene(only three actions:left, right, shot)
+  with deep Q-learning
+：dependencies: python 3.7.1, vizdoom 1.1.7
 """
 import tensorflow as tf
 import numpy as np
 from vizdoom import *     # Doom Environment
 import random
-import time
 from skimage import transform
 from collections import deque
-import matplotlib.pyplot as plt
 
 
 class Preprocessing():
@@ -50,11 +49,28 @@ class Preprocessing():
         return self.stacked_state, self.stacked_frames
 
 
+class ReplayMemory():
+
+    def __init__(self, max_size=100000):
+        self.buffer = deque(maxlen=max_size)
+
+    def add(self, experience):
+        self.buffer.append(experience)
+
+    def sample(self, batch_size):
+        buffer_size = len(self.buffer)
+        index = np.random.choice(np.arange(buffer_size),
+                                 size=batch_size,
+                                 replace=False)
+
+        return [self.buffer[i] for i in index]
+
+
 class DeepQNetwork():
 
     def __init__(self, state_size, action_size,
                  learning_rate, total_episodes, max_steps,
-                 explore_start, explore_stop, name='DeepQNetwork'):
+                 explore_start, explore_stop, decay_rate, name='DeepQNetwork'):
 
         self.state_size = state_size
         self.action_size = action_size
@@ -63,8 +79,14 @@ class DeepQNetwork():
         self.max_steps = max_steps
         self.explore_start = explore_start
         self.explore_stop = explore_stop
+        self.decay_rate = decay_rate
+        self.memory = ReplayMemory()
         self.saver = tf.train.Saver()
         self.game, self.possible_actions = self.creatEnv()
+        tf.reset_default_graph()
+        self.Network = self._init_DeepQ(state_size, action_size, learning_rate)
+
+    def _init_DeepQ(self, state_size, action_size, learning_rate):
 
         with tf.variable_scope(name):
             # inputs_: [None, 84, 84, 4]
@@ -72,7 +94,6 @@ class DeepQNetwork():
                                           [None, *state_size], name="inputs")
             self.actions_ = tf.placeholder(
                 tf.float32, [None, 3], name="actions")
-
             self.target_Q = tf.placeholder(tf.float32, [None], name="target")
 
             """
@@ -192,26 +213,27 @@ class DeepQNetwork():
 
         return game, possible_actions
 
-    def predict_action(self):
+    def predict_action(self, decay_step, state):
         tradeoff = np.random.rand()
 
-        explore_probability = explore_stop + \
-            (explore_start - explore_stop) * np.exp(-decay_rate * decay_step)
+        explore_probability = self.explore_stop + \
+            (self.explore_start - self.explore_stop) * \
+            np.exp(-self.decay_rate * decay_step)
 
         if (explore_probability > tradeoff):
-            action = random.choice(possible_actions)
+            action = random.choice(self.possible_actions)
 
         else:
             # Get action from Q-network (exploitation)
             Qs = sess.run(
-                DQNetwork.output,
-                feed_dict={DQNetwork.inputs_: state.reshape((1, *state.shape))})
+                self.Network.output,
+                feed_dict={self.Network.inputs_: state.reshape((1, *state.shape))})
 
             # Take the biggest Q value
             choice = np.argmax(Qs)
-            action = possible_actions[int(choice)]
+            action = self.possible_actions[int(choice)]
 
-        return action, explore_probability
+        return action
 
     def train(self):
 
@@ -219,13 +241,12 @@ class DeepQNetwork():
             sess.run(tf.global_variables_initializer())
             decay_step = 0
             self.game.init()
+            preprocessed_frames = Preprocessing()
 
             for episode in range(self.total_episodes):
                 step = 0
-                episode_rewards = []
                 self.game.new_episode()
                 state = self.game.get_state().screen_buffer
-                preprocessed_frames = Preprocessing()
                 state, stacked_frames = preprocessed_frames.stack_frames(
                     state, True)
 
@@ -234,4 +255,91 @@ class DeepQNetwork():
                     decay_step += 1
 
                     # predict the action to take
-                    action, explore_probability = self.predict_action()
+                    action = self.predict_action(decay_step, state)
+                    reward = game.make_action(action)
+                    done = game.is_episode_finished()
+
+                    if done:
+                        next_state = np.zeros((84, 84), dtype=np.int)
+                        next_state, stacked_frames = preprocessed_frames.stack_frames(
+                            next_state, False)
+                        step = self.max_steps
+                        memory.add((state, action, reward, next_state, done))
+                    else:
+                        next_state = game.get_state().screen_buffer
+                        next_state, stacked_frames = preprocessed_frames.stack_frames(
+                            next_state, False)
+                        memory.add((state, action, reward, next_state, done))
+                        state = next_state
+
+                # LEARNING PART
+                # Obtain random mini-batch from memory
+                batch = self.memory.sample(batch_size)
+                states_mb = np.array([each[0] for each in batch], ndmin=3)
+                actions_mb = np.array([each[1] for each in batch])
+                rewards_mb = np.array([each[2] for each in batch])
+                next_states_mb = np.array([each[3] for each in batch], ndmin=3)
+                dones_mb = np.array([each[4] for each in batch])
+
+                target_Qs_batch = []
+
+                # Get Q values for next_state
+                Qs_next_state = sess.run(self.Network.output, feed_dict={
+                                         self.Network.inputs_: next_states_mb})
+
+                # Set Q_target = r if the episode ends at s+1, otherwise set
+                # Q_target = r + gamma*maxQ(s', a')
+                for i in range(0, len(batch)):
+                    if dones_mb[i]:
+                        target_Qs_batch.append(rewards_mb[i])
+                    else:
+                        target = rewards_mb[i] + gamma * \
+                            np.max(Qs_next_state[i])
+                        target_Qs_batch.append(target)
+
+                targets_mb = np.array([each for each in target_Qs_batch])
+
+                loss, _ = sess.run([self.Network.loss, self.Network.optimizer],
+                                   feed_dict={
+                                   self.Network.inputs_: states_mb,
+                                   self.Network.target_Q: targets_mb,
+                                   self.Network.actions_: actions_mb})
+
+            # Save model every 5 episodes
+            if episode % 5 == 0:
+                saver.save(sess, "./models/model.ckpt")
+            self.game.close()
+
+    def Play(self):
+        with tf.Session() as sess:
+            self.saver.restore(sess, "./models/model.ckpt")
+            self.game.init()
+            done = False
+            self.game.new_episode()
+            state = self.game.get_state().screen_buffer
+            preprocessed_frames = Preprocessing()
+            state, stacked_frames = preprocessed_frames.stack_frames(
+                state, True)
+            while not self.game.is_episode_finished():
+                Qs = sess.run(self.Network.output,
+                              feed_dict={
+                                  self.Network.inputs_:
+                                  state.reshape((1, *state.shape))})
+                choice = np.argmax(Qs)
+                action = possible_actions[int(choice)]
+
+                self.game.make_action(action)
+                done = self.game.is_episode_finished()
+                score = self.game.get_total_reward()
+
+                if done:
+                    break
+                else:
+                    next_state = self.game.get_state().screen_buffer
+                    next_state, stacked_frames = preprocessed_frames.stack_frames(
+                        next_state, False)
+                    state = next_state
+
+            score = self.game.get_total_reward()
+            print("Score: ", score)
+            self.game.close()
