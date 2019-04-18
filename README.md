@@ -9,5 +9,7 @@ This programm shows how to find frontal faces in an image and judge their attrac
 
 
 if you are in the FaceRating folder then you can execute this program by running:
-        
-        `./face_landmark_detection.py ../test_img/test.jpg`
+
+```
+./face_landmark_detection.py ../test_img/test.jpg
+```
