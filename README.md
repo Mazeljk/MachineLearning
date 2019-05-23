@@ -13,3 +13,6 @@ if you are in the FaceRating folder then you can execute this program by running
 ```
 ./face_landmark_detection.py ../test_img/test.jpg
 ```
+## Genetic algorithm
+
+Several examples using genetic algorithms
