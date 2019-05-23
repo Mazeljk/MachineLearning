@@ -34,14 +34,14 @@ class Images(Dataset):
         for filename in filenames:
             rating = round(ratings[ratings['Filename'] == filename][
                            'Rating'].mean(), 2)
-            self.labels.append({'Filename': filename, 'rating': rating})
+            self.labels.append({'Filename': filename, 'Rating': rating})
         self.labels = pd.DataFrame(self.labels)
 
     def __getitem__(self, index):
 
         img_path = self.imagespath[index % len(self.imagespath)]
         img = np.array(Image.open(img_path)) / 255.
-        input_img = resize(img, (*self.img_shape), mode='reflect')
+        input_img = resize(img, (*self.img_shape, 3), mode='reflect')
         # array: (channel,height,width) -> tensor
         input_img = np.transpose(input_img, (2, 0, 1))
         input_img = torch.from_numpy(input_img).float()
