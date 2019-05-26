@@ -16,7 +16,7 @@ class Config:
 
     imagespath = './SCUT-FBP5500_v2/Images/'
     labelspath = './SCUT-FBP5500_v2/All_Ratings.xlsx'
-    img_shape = (350, 350)
+    img_shape = (224, 224)
     is_shuffle = True
     modeldir = './model'
     use_cuda = False
@@ -171,3 +171,9 @@ class DeepNN():
             f.write(content + '\n')
             f.close()
         print(content)
+
+
+if __name__ == '__main__':
+    config = Config()
+    DNN = DeepNN(config)
+    DNN.train()
