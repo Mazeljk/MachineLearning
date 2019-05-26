@@ -25,7 +25,7 @@ def rating(imgpath, modelpath='./model/epoch_15.pkl'):
     b, g, r = cv2.split(image)
     image_rgb = cv2.merge([r, g, b])
     rects = detector(image_rgb, 1)
-    if len(rects) > 1:
+    if len(rects) > 0:
         for rect in rects:
             lefttop_x = rect.left()
             lefttop_y = rect.top()
@@ -33,8 +33,9 @@ def rating(imgpath, modelpath='./model/epoch_15.pkl'):
             rightbottom_y = rect.bottom()
             cv2.rectangle(image, (lefttop_x, lefttop_y),
                           (rightbottom_x, rightbottom_y), (0, 255, 0), 2)
-            face = image_rgb[lefttop_y:rightbottom_y, lefttop_x:rightbottom_x]
-            face = resize(face, (224, 224, 3), model='reflect')
+            face = image_rgb[lefttop_y:rightbottom_y,
+                             lefttop_x:rightbottom_x] / 255.
+            face = resize(face, (224, 224, 3), mode='reflect')
             face = np.transpose(face, (2, 0, 1))
             face = torch.from_numpy(face).float().resize_(1, 3, 224, 224)
             face = face.type(FloatTensor)
@@ -45,6 +46,7 @@ def rating(imgpath, modelpath='./model/epoch_15.pkl'):
                         font, 0.5, (0, 0, 255), 1)
         cv2.namedWindow('result', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('result', image)
+        print('Please press any key in the picture interface to exit')
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
