@@ -13,6 +13,17 @@ if you are in the FaceRating folder then you can execute this program by running
 ```
 ./face_landmark_detection.py ../test_img/test.jpg
 ```
+
+## FaceRating2
+Use **ResNet18** to judge a person's face attractiveness.
+
+
+if you are in the FaceRating2 folder then you can execute this program by running:
+
+```
+python main.py --imagepath ./test_img/test1.jpg
+```
+
 ## Genetic algorithm
 
 Several examples using genetic algorithms
