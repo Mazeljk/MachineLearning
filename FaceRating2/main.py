@@ -6,6 +6,7 @@ import numpy as np
 import torch.nn as nn
 from skimage.transform import resize
 import argparse
+import warnings
 
 
 def rating(imgpath, modelpath='./model/epoch_15.pkl'):
@@ -52,6 +53,7 @@ def rating(imgpath, modelpath='./model/epoch_15.pkl'):
 
 
 if __name__ == '__main__':
+    warnings.filterwarnings('ignore')
     parser = argparse.ArgumentParser(description='Face Rating')
     parser.add_argument('-i', '--imagepath', dest='image',
                         help='Image to be rated')

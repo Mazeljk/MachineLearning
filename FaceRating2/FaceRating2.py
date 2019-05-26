@@ -10,6 +10,7 @@ from skimage.transform import resize
 import torchvision
 import torch.nn as nn
 import time
+import warnings
 
 
 class Config:
@@ -174,6 +175,7 @@ class DeepNN():
 
 
 if __name__ == '__main__':
+    warnings.filterwarnings('ignore')
     config = Config()
     DNN = DeepNN(config)
     DNN.train()
