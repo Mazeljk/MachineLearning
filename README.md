@@ -28,3 +28,7 @@ python main.py --imagepath ./test_img/test1.jpg
 ## Genetic algorithm
 
 Several examples using genetic algorithms
+
+
+## Lane Detection
+Lane detection using traditional image processing techniques
