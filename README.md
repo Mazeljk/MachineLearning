@@ -37,3 +37,11 @@ Lane detection using traditional image processing techniques
 Use **[SSD_mobileNet_v1_coco](https://github.com/tensorflow/models/blob/v1.13.0/research/object_detection/g3doc/detection_model_zoo.md)** to detect the object
 
 ref: modify from [tensorflow detection api demo(v1.13.0)](https://github.com/tensorflow/models/blob/v1.13.0/research/object_detection/object_detection_tutorial.ipynb)
+
+
+## AlexNet
+finetune AlexNet to distinguish the dogs from cats. The framework has been completed, *but it has not been trained*.
+
+### TODO
++ [ ] Upgrade my graphics card to support GPU **;)**
++ [ ] finetune the model based on AlexNet(fc7 and fc8)
