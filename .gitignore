@@ -104,3 +104,6 @@ venv.bak/
 .mypy_cache/
 
 .DS_Store
+
+# ignore large files in AlexNet
+/AlexNet/model/bvlc_alexnet.npy
