@@ -142,8 +142,6 @@ if __name__ == '__main__':
     for image_path in image_paths:
         # load image
         image = cv2.imread(image_path)
-        # convert color space, try to remove this you'll see amazing result for
-        # image1
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         # detection
         detector.detect(image, mark=True)
