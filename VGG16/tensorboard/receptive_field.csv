@@ -1,0 +1,20 @@
+layer's name,receptive_field,product_Si
+0th layer,1,1
+conv1,3,1
+conv2,5,1
+pool2,6,2
+conv3,10,2
+conv4,14,2
+pool4,16,4
+conv5,24,4
+conv6,32,4
+conv7,40,4
+pool7,44,8
+conv8,60,8
+conv9,76,8
+conv10,92,8
+pool10,100,16
+conv11,132,16
+conv12,164,16
+conv13,196,16
+pool13,212,32
